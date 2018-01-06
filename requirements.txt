@@ -1,0 +1,6 @@
+tensorflow
+tqdm
+numpy
+datetime
+pandas
+matplotlib
