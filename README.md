@@ -1,4 +1,4 @@
-# CapsNet-GAN-Tensorflow
+# CapsNet-GAN-Tensorflow Implmentation
 An experimental Generative Adversarial Network implementation of the Capsule Neural Network. It is based on the recent works on Dynamic Routing between Capsules:
 reference: [Dynamic routing between capsules](https://arxiv.org/abs/1710.09829v1) by **Sara Sabour, Nicholas Frosst, Geoffrey E Hinton**
 
