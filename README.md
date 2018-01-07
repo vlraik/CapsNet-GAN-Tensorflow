@@ -22,7 +22,7 @@ reference: [Dynamic routing between capsules](https://arxiv.org/abs/1710.09829v1
    Resulting generated images of the network are on the way. I'll soon commit them.
   
 ## Note
-   -As of the initial commit, only the discriminator is has the CapsNet implementation, in the next update, I'll change the generative model also have CapsNet layer in order to make the GAN more stable.
+   -Added the CapsNet layer to the generative model, but the entire network hogs a lot of GPU memory, need to find a way to reduce it in the next commit.
    -Need to tune hyperparameter so that the GAN gets properly trained.
    
    -Add an option to also train on Fashion MNIST dataset
