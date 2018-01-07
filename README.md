@@ -23,6 +23,7 @@ reference: [Dynamic routing between capsules](https://arxiv.org/abs/1710.09829v1
   
 ## Note
    -Added the CapsNet layer to the generative model, but the entire network hogs a lot of GPU memory, need to find a way to reduce it in the next commit.
+   
    -Need to tune hyperparameter so that the GAN gets properly trained.
    
    -Add an option to also train on Fashion MNIST dataset
