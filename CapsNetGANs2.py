@@ -44,7 +44,7 @@ class CapsConv(object):
         else:
             # the DigitCap layer
             # reshape the input into shape [128,1152,8,1]
-            self.input = tf.reshape(input, shape=(10, 1152, 8,1))
+            input = tf.reshape(input, shape=(10, 1152, 8,1))
             
             #b_IJ : [1, num_caps_1, num_caps_1_plus_1, 1]
             b_IJ = tf.zeros(shape=[1,1152,10,1], dtype=np.float32)
