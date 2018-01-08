@@ -261,8 +261,9 @@ def generator(batch_size, z_dim):
     return g4
 
 
-
-sess = tf.Session()
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+sess = tf.Session(config=config)
 
 batch_size = 10
 z_dimensions = 100
