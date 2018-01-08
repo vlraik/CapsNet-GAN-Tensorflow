@@ -437,7 +437,9 @@ d_on_real = tf.reduce_mean(discriminator(x_placeholder))
 tf.summary.scalar('d_on_generated_eval', d_on_generated)
 tf.summary.scalar('d_on_real_eval', d_on_real)
 
-images_for_tensorboard = generator(batch_size, z_dimensions)
+#images_for_tensorboard = generator(batch_size, z_dimensions)
+images_for_tensorboard = tf.reshape(generator(batch_size,z_dimensions),[-1,28,28])
+images_for_tensorboard = tf.expand_dims(images_for_tensorboard,3)
 tf.summary.image('Generated_images', images_for_tensorboard, 10)
 merged = tf.summary.merge_all()
 logdir = "tensorboard/gan/"
@@ -493,7 +495,9 @@ for i in range(50000):
 	if i % 1000 == 0:
 		# Periodically display a sample image in the notebook
 		# (These are also being sent to TensorBoard every 10 iterations)
-		images = sess.run(generator(10, z_dimensions))
+		#images = sess.run(generator(10, z_dimensions))
+		images = tf.reshape(generator(batch_size,z_dimensions),[-1,28,28])
+		images = sess.run(tf.expand_dims(images,3))
 		d_result = sess.run(discriminator(x_placeholder), {x_placeholder: images})
 		print("TRAINING STEP", i, "AT", datetime.datetime.now())
 		for j in range(3):
@@ -507,7 +511,9 @@ for i in range(50000):
 		print("saved to %s" % save_path)
 
 
-test_images = sess.run(generator(10, 100))
+#test_images = sess.run(generator(10, 100))
+test_images = tf.reshape(generator(batch_size,z_dimensions),[-1,28,28])
+test_images = sess.run(tf.expand_dims(test_images,3))
 test_eval = sess.run(discriminator(x_placeholder), {x_placeholder: test_images})
 
 real_images = mnist.validation.next_batch(10)[0].reshape([10, 28, 28, 1])
