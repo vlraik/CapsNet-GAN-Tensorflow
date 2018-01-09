@@ -22,9 +22,9 @@ reference: [Dynamic routing between capsules](https://arxiv.org/abs/1710.09829v1
    Resulting generated images of the network are on the way. I'll soon commit them.
   
 ## Note
-   <del>-If the CapsNetGANs.py does not work on your machine due to GPU Memory constraint, try CapsNetGANs2.py, in this only the discriminator has the CapsNet layer and thus takes much lesser memory.</del> Optimised for memory constraints.
+   <del>-If the CapsNetGANs.py does not work on your machine due to GPU Memory constraint, try CapsNetGANs2.py, in this only the discriminator has the CapsNet layer and thus takes much lesser memory.</del> 
    
-   -Added the CapsNet layer to the generative model, but the entire network hogs a lot of GPU memory, need to find a way to reduce it in the next commit.
+   <del>-Added the CapsNet layer to the generative model, but the entire network hogs a lot of GPU memory, need to find a way to reduce it in the next commit.</del> Optimised for memory constraints.
    
    -Need to tune hyperparameter so that the GAN gets properly trained.
    
