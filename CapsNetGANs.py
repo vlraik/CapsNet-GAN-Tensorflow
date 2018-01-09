@@ -34,18 +34,18 @@ class CapsConv(object):
 			capsules = tf.contrib.layers.conv2d(input, self.num_outputs,
 												self.kernel_size, self.stride, padding="VALID",
 												activation_fn=tf.nn.relu)
-			capsules = tf.reshape(capsules, (10, -1, self.num_units, 1))
+			capsules = tf.reshape(capsules, (50, -1, self.num_units, 1))
 
 			# [batch_size, 1152, 8, 1]
 			capsules = squash(capsules)
 			print(capsules.get_shape())
-			assert capsules.get_shape() == [10, 1152, 8, 1]
+			assert capsules.get_shape() == [50, 1152, 8, 1]
 			return(capsules)
 			
 		else:
 			# the DigitCap layer
 			# reshape the input into shape [128,1152,8,1]
-			input = tf.reshape(input, shape=(10, 1152, 8,1))
+			input = tf.reshape(input, shape=(50, 1152, 8,1))
 			
 			#b_IJ : [1, num_caps_1, num_caps_1_plus_1, 1]
 			b_IJ = tf.zeros(shape=[1,1152,10,1], dtype=np.float32)
@@ -57,7 +57,7 @@ class CapsConv(object):
 			
 			#return a tensor with shape [batch_size,10,16,1]
 			capsules = tf.concat(capsules, axis=1)
-			assert capsules.get_shape() == [10,10,16,1]
+			assert capsules.get_shape() == [50,10,16,1]
 		
 		return(capsules)
 
@@ -85,18 +85,18 @@ class CapsConv2(object):
 			capsules = tf.contrib.layers.conv2d(input, self.num_outputs,
 												self.kernel_size, self.stride, padding="VALID",
 												activation_fn=tf.nn.relu)
-			capsules = tf.reshape(capsules, (10, -1, self.num_units, 1))
+			capsules = tf.reshape(capsules, (50, -1, self.num_units, 1))
 
 			# [batch_size, 1152, 8, 1]
 			capsules = squash(capsules)
 			print(capsules.get_shape())
-			assert capsules.get_shape() == [10, 1152, 8, 1]
+			assert capsules.get_shape() == [50, 1152, 8, 1]
 			return(capsules)
 			
 		else:
 			# the DigitCap layer
 			# reshape the input into shape [128,1152,8,1]
-			input = tf.reshape(input, shape=(10, 1152, 8,1))
+			input = tf.reshape(input, shape=(50, 1152, 8,1))
 			
 			#b_IJ : [1, num_caps_1, num_caps_1_plus_1, 1]
 			b_IJ = tf.zeros(shape=[1,1152,10,1], dtype=np.float32)
@@ -108,7 +108,7 @@ class CapsConv2(object):
 			
 			#return a tensor with shape [batch_size,10,16,1]
 			capsules = tf.concat(capsules, axis=1)
-			assert capsules.get_shape() == [10,10,16,1]
+			assert capsules.get_shape() == [50,10,16,1]
 		
 		return(capsules)
 
@@ -131,12 +131,12 @@ def capsule(input, b_IJ, idx_j):
 		W_Ij = tf.Variable(w_initializer, dtype=tf.float32)
 		sess.run(tf.global_variables_initializer())
 		# repeat W_Ij with batch_size times to shape [batch_size, 1152, 8, 16]
-		W_Ij = tf.tile(W_Ij, [10, 1, 1, 1])
+		W_Ij = tf.tile(W_Ij, [50, 1, 1, 1])
 
 		# calc u_hat
 		# [8, 16].T x [8, 1] => [16, 1] => [batch_size, 1152, 16, 1]
 		u_hat = tf.matmul(W_Ij, input, transpose_a=True)
-		assert u_hat.get_shape() == [10, 1152, 16, 1]
+		assert u_hat.get_shape() == [50, 1152, 16, 1]
 
 		shape = b_IJ.get_shape().as_list()
 		size_splits = [idx_j, 1, shape[2] - idx_j - 1]
@@ -156,12 +156,12 @@ def capsule(input, b_IJ, idx_j):
 			s_j = tf.multiply(c_Ij, u_hat)
 			s_j = tf.reduce_sum(tf.multiply(c_Ij, u_hat),
 								axis=1, keep_dims=True)
-			assert s_j.get_shape() == [10, 1, 16, 1]
+			assert s_j.get_shape() == [50, 1, 16, 1]
 
 			# line 6:
 			# squash using Eq.1, resulting in [batch_size, 1, 16, 1]
 			v_j = squash(s_j)
-			assert s_j.get_shape() == [10, 1, 16, 1]
+			assert s_j.get_shape() == [50, 1, 16, 1]
 
 			# line 7:
 			# tile v_j from [batch_size ,1, 16, 1] to [batch_size, 1152, 16, 1]
@@ -169,7 +169,7 @@ def capsule(input, b_IJ, idx_j):
 			# batch_size dim, resulting in [1, 1152, 1, 1]
 			v_j_tiled = tf.tile(v_j, [1, 1152, 1, 1])
 			u_produce_v = tf.matmul(u_hat, v_j_tiled, transpose_a=True)
-			assert u_produce_v.get_shape() == [10, 1152, 1, 1]
+			assert u_produce_v.get_shape() == [50, 1152, 1, 1]
 			b_Ij += tf.reduce_sum(u_produce_v, axis=0, keep_dims=True)
 			b_IJ = tf.concat([b_Il, b_Ij, b_Ir], axis=2)
 
@@ -313,13 +313,13 @@ def generator(batch_size, z_dim):
 		v_length = tf.sqrt(tf.reduce_sum(tf.square(caps2Gen),
 											  axis=2, keep_dims=True) + 1e-9)
 		softmax_v = tf.nn.softmax(v_length, dim=1)
-		assert softmax_v.get_shape() == [10, 10, 1, 1]
+		assert softmax_v.get_shape() == [50, 10, 1, 1]
 
 		# b). pick out the index of max softmax val of the 10 caps
 		# [batch_size, 10, 1, 1] => [batch_size] (index)
 		argmax_idx = tf.to_int32(tf.argmax(softmax_v, axis=1))
-		assert argmax_idx.get_shape() == [10, 1, 1]
-		argmax_idx = tf.reshape(argmax_idx, shape=(10, ))
+		assert argmax_idx.get_shape() == [50, 1, 1]
+		argmax_idx = tf.reshape(argmax_idx, shape=(50, ))
 
 		# Method 1.
 		if not True:
@@ -327,12 +327,12 @@ def generator(batch_size, z_dim):
 			# It's not easy to understand the indexing process with argmax_idx
 			# as we are 3-dim animal
 			masked_v = []
-			for batch_size in range(10):
+			for batch_size in range(50):
 				v = caps2Gen[batch_size][argmax_idx[batch_size], :]
 				masked_v.append(tf.reshape(v, shape=(1, 1, 16, 1)))
 
 			masked_v = tf.concat(masked_v, axis=0)
-			assert masked_v.get_shape() == [10, 1, 16, 1]
+			assert masked_v.get_shape() == [50, 1, 16, 1]
 		# Method 2. masking with true label, default mode
 		else:
 			# masked_v = tf.matmul(tf.squeeze(caps2), tf.reshape(Y, (-1, 10, 1)), transpose_a=True)
@@ -343,11 +343,11 @@ def generator(batch_size, z_dim):
 	# 2. Reconstructe the MNIST images with 3 FC layers
 	# [batch_size, 1, 16, 1] => [batch_size, 16] => [batch_size, 512]
 	with tf.variable_scope('Decoder'):
-		vector_j = tf.reshape(caps2Gen, shape=(10, -1))
+		vector_j = tf.reshape(caps2Gen, shape=(50, -1))
 		fc1 = tf.contrib.layers.fully_connected(vector_j, num_outputs=512)
-		assert fc1.get_shape() == [10, 512]
+		assert fc1.get_shape() == [50, 512]
 		fc2 = tf.contrib.layers.fully_connected(fc1, num_outputs=1024)
-		assert fc2.get_shape() == [10, 1024]
+		assert fc2.get_shape() == [50, 1024]
 		decoded = tf.contrib.layers.fully_connected(fc2, num_outputs=784, activation_fn=tf.sigmoid)
 
 	return decoded
@@ -373,11 +373,11 @@ config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 sess = tf.Session(config=config)
 
-batch_size = 10
+batch_size = 50
 z_dimensions = 100
 
 #x_placeholder is for the input image to the discriminator
-x_placeholder = tf.placeholder("float", shape=[10, 28,28,1], name='x_placeholder')
+x_placeholder = tf.placeholder("float", shape=[50, 28,28,1], name='x_placeholder')
 
 #generated images
 Gz = generator(batch_size, z_dimensions)
@@ -408,9 +408,9 @@ d_vars = [var for var in tvars if 'd_' in var.name]
 g_vars = [var for var in tvars if 'g_' in var.name]
 
 with tf.variable_scope(scope):    
-	d_trainer_fake = tf.train.AdamOptimizer(0.0001).minimize(d_loss_fake, var_list=d_vars) 
-	d_trainer_real = tf.train.AdamOptimizer(0.0001).minimize(d_loss_real, var_list=d_vars) 
-	g_trainer = tf.train.AdamOptimizer(0.0001).minimize(g_loss, var_list=g_vars)
+	d_trainer_fake = tf.train.AdamOptimizer(0.004).minimize(d_loss_fake, var_list=d_vars) 
+	d_trainer_real = tf.train.AdamOptimizer(0.004).minimize(d_loss_real, var_list=d_vars) 
+	g_trainer = tf.train.AdamOptimizer(0.004).minimize(g_loss, var_list=g_vars)
 
 
 #Outputs a Summary protocol buffer containing a single scalar value.
@@ -428,7 +428,7 @@ tf.summary.scalar('g_count', g_count_ph)
 
 # Sanity check to see how the discriminator evaluates
 # generated and real MNIST images
-
+'''
 genimage2 = tf.reshape(generator(batch_size,z_dimensions),[-1,28,28])
 genimage2 = tf.expand_dims(genimage2,3)
 d_on_generated = tf.reduce_mean(discriminator(genimage2))
@@ -436,9 +436,10 @@ d_on_real = tf.reduce_mean(discriminator(x_placeholder))
 
 tf.summary.scalar('d_on_generated_eval', d_on_generated)
 tf.summary.scalar('d_on_real_eval', d_on_real)
+'''
 
 #images_for_tensorboard = generator(batch_size, z_dimensions)
-images_for_tensorboard = tf.reshape(generator(batch_size,z_dimensions),[-1,28,28])
+images_for_tensorboard = tf.reshape(Gz,[-1,28,28])
 images_for_tensorboard = tf.expand_dims(images_for_tensorboard,3)
 tf.summary.image('Generated_images', images_for_tensorboard, 10)
 merged = tf.summary.merge_all()
@@ -492,6 +493,7 @@ for i in range(50000):
 		writer.add_summary(summary, i)
 		d_real_count, d_fake_count, g_count = 0, 0, 0
 
+	'''
 	if i % 1000 == 0:
 		# Periodically display a sample image in the notebook
 		# (These are also being sent to TensorBoard every 10 iterations)
@@ -505,6 +507,7 @@ for i in range(50000):
 			im = images[j, :, :, 0]
 			plt.imshow(im.reshape([28, 28]), cmap='Greys')
 			plt.show()
+	'''
 
 	if i % 5000 == 0:
 		save_path = saver.save(sess, "models/pretrained_gan.ckpt", global_step=i)
@@ -516,7 +519,7 @@ test_images = tf.reshape(generator(batch_size,z_dimensions),[-1,28,28])
 test_images = sess.run(tf.expand_dims(test_images,3))
 test_eval = sess.run(discriminator(x_placeholder), {x_placeholder: test_images})
 
-real_images = mnist.validation.next_batch(10)[0].reshape([10, 28, 28, 1])
+real_images = mnist.validation.next_batch(50)[0].reshape([50, 28, 28, 1])
 real_eval = sess.run(discriminator(x_placeholder), {x_placeholder: real_images})
 
 # Show discriminator's probabilities for the generated images,
