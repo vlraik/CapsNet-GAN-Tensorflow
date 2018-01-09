@@ -439,7 +439,7 @@ tf.summary.scalar('d_on_real_eval', d_on_real)
 '''
 
 #images_for_tensorboard = generator(batch_size, z_dimensions)
-images_for_tensorboard = tf.reshape(Gz,[-1,28,28])
+images_for_tensorboard = tf.reshape(generator(batch_size, z_dimensions),[-1,28,28])
 images_for_tensorboard = tf.expand_dims(images_for_tensorboard,3)
 tf.summary.image('Generated_images', images_for_tensorboard, 10)
 merged = tf.summary.merge_all()
