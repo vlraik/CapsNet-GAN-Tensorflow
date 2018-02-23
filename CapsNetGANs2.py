@@ -28,7 +28,7 @@ class CapsConv(object):
         self.num_outputs = num_outputs
         self.kernel_size = kernel_size
         self.stride = stride
-        batch_size=25
+        batch_size=32
         if not self.with_routing:
             #assert input.get_shape() == [None, 28,28,256]
 
@@ -80,7 +80,7 @@ def capsule(input, b_IJ, idx_j):
 
         W_Ij = tf.Variable(w_initializer, dtype=tf.float32)
         sess.run(tf.global_variables_initializer())
-        batch_size=25
+        batch_size=32
         # repeat W_Ij with batch_size times to shape [batch_size, 1152, 8, 16]
         W_Ij = tf.tile(W_Ij, [batch_size, 1, 1, 1])
 
@@ -233,18 +233,6 @@ def generator(batch_size, z_dim):
     g3 = tf.nn.relu(g3)
     g3 = tf.image.resize_images(g3, [56, 56])
     
-    #CapsNet Implementation
-    #Masking is done by default
-    '''
-    #generate 50 features, requires a conv1, primary cap and digit cap
-    
-    #generate 25 feaures, requires a conv2, primary cap and a digit cap
-    
-    #masking true by default
-    self.masked_v = tf.multiply(tf.squeeze(self.caps2), tf.reshape(self.Y,(-1,10,1)))
-    self.v_length = tf.sqrt(tf.reduce_sum(tf.square(self.caps2), axis=2, keep_dims=True)+1e-9)
-        
-    '''
 
     # Final convolution with one output channel
     g_w4 = tf.get_variable('g_w4', [1, 1, z_dim/4, 1], dtype=tf.float32, initializer=tf.truncated_normal_initializer(stddev=0.02))
@@ -264,7 +252,7 @@ config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 sess = tf.Session(config=config)
 
-batch_size = 25
+batch_size = 32
 z_dimensions = 100
 
 #x_placeholder is for the input image to the discriminator
@@ -289,7 +277,33 @@ g_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=Dg, label
 
 d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=Dx, labels=tf.fill([batch_size, 1], 0.9)))
 d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=Dg, labels=tf.zeros_like(Dg)))
-d_loss = d_loss_real + d_loss_fake
+
+
+
+# losses
+def gradient_penalty(real, fake):
+    def interpolate(a, b):
+        #shape = tf.concat((tf.shape(a)[0:1], tf.tile([1], [a.shape.ndims - 1])), axis=0)
+        #alpha = tf.random_uniform(shape=shape, minval=0., maxval=1.)
+        alpha = tf.random_uniform(shape=[batch_size,28,28,1], minval=0., maxval=1.)
+        print(a.shape, b.shape, alpha.shape)
+        inter = a + alpha * (b - a)
+        inter.set_shape(a.get_shape().as_list())
+        return inter
+
+    x = interpolate(real, fake)
+    pred = discriminator(x)
+    gradients = tf.gradients(pred, x)[0]
+    print(x.shape.ndims)
+    slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[3]))
+    gp = tf.reduce_mean((slopes - 1.)**2)
+    return gp
+
+#d_loss = d_loss_real + d_loss_fake
+
+#d_loss for wgan-gp
+d_loss =  tf.scalar_mul(-1,tf.subtract(d_loss_real,d_loss_fake)) + tf.scalar_mul(10,gradient_penalty(x_placeholder, Gz))
+
 
 tvars = tf.trainable_variables()
 
@@ -297,9 +311,9 @@ d_vars = [var for var in tvars if 'd_' in var.name]
 g_vars = [var for var in tvars if 'g_' in var.name]
 
 with tf.variable_scope(scope):    
-    d_trainer_fake = tf.train.AdamOptimizer(0.0004).minimize(d_loss_fake, var_list=d_vars) 
-    d_trainer_real = tf.train.AdamOptimizer(0.0004).minimize(d_loss_real, var_list=d_vars) 
-    g_trainer = tf.train.AdamOptimizer(0.0005).minimize(g_loss, var_list=g_vars)
+    d_trainer_fake = tf.train.AdamOptimizer(0.000005).minimize(d_loss_fake, var_list=d_vars) 
+    d_trainer_real = tf.train.AdamOptimizer(0.000005).minimize(d_loss_real, var_list=d_vars) 
+    g_trainer = tf.train.AdamOptimizer(0.0004).minimize(g_loss, var_list=g_vars)
 
 
 #Outputs a Summary protocol buffer containing a single scalar value.
@@ -317,13 +331,13 @@ tf.summary.scalar('g_count', g_count_ph)
 
 # Sanity check to see how the discriminator evaluates
 # generated and real MNIST images
-'''
+
 d_on_generated = tf.reduce_mean(discriminator(generator(batch_size, z_dimensions)))
 d_on_real = tf.reduce_mean(discriminator(x_placeholder))
 
 tf.summary.scalar('d_on_generated_eval', d_on_generated)
 tf.summary.scalar('d_on_real_eval', d_on_real)
-'''
+
 
 images_for_tensorboard = generator(batch_size, z_dimensions)
 tf.summary.image('Generated_images', images_for_tensorboard, 10)
@@ -352,24 +366,27 @@ dLossFake, dLossReal = 1, 1
 d_real_count, d_fake_count, g_count = 0, 0, 0
 for i in range(50000):
     real_image_batch = mnist.train.next_batch(batch_size)[0].reshape([batch_size, 28, 28, 1])
-    if dLossFake > 0.6:
+    if dLossFake > 0.2:
         # Train discriminator on generated images
         _, dLossReal, dLossFake, gLoss = sess.run([d_trainer_fake, d_loss_real, d_loss_fake, g_loss],
                                                     {x_placeholder: real_image_batch})
         d_fake_count += 1
 
-    if gLoss > 0.5:
+    if gLoss > 0.2:
         # Train the generator
         _, dLossReal, dLossFake, gLoss = sess.run([g_trainer, d_loss_real, d_loss_fake, g_loss],
                                                     {x_placeholder: real_image_batch})
         g_count += 1
 
-    if dLossReal > 0.45:
+
+    if dLossReal > 0.2:
         # If the discriminator classifies real images as fake,
         # train discriminator on real values
         _, dLossReal, dLossFake, gLoss = sess.run([d_trainer_real, d_loss_real, d_loss_fake, g_loss],
                                                     {x_placeholder: real_image_batch})
         d_real_count += 1
+
+
 
     if i % 10 == 0:
         real_image_batch = mnist.validation.next_batch(batch_size)[0].reshape([batch_size, 28, 28, 1])
